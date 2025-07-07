@@ -1,0 +1,52 @@
+name: Fetch and clean server list with UTF-8 fix
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # chạy mỗi giờ
+  workflow_dispatch:
+
+jobs:
+  fetch_clean_save:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Fetch and process with encoding fix
+        run: |
+          # Tạo file tạm
+          > temp_raw.txt
+
+          # Lấy dữ liệu từ các URL
+          curl -s http://dangky.hexat.com/lau.txt >> temp_raw.txt
+          curl -s http://112.213.94.5/srvips/sv.txt >> temp_raw.txt
+          curl -s http://tuananh0781.hexat.com/19951999dshgkjd.txt >> temp_raw.txt
+          curl -s http://kpah99.com/nqsh9.txt >> temp_raw.txt
+          curl -s http://rkbom.site/ip/svmoi.txt >> temp_raw.txt
+          curl -s http://sv.naska.com.vn/allsv.txt >> temp_raw.txt
+
+          # Chuyển mã hóa từ Windows-1258 → UTF-8 (nếu sai encoding)
+          iconv -f WINDOWS-1258 -t UTF-8 temp_raw.txt -o temp_utf8.txt || cp temp_raw.txt temp_utf8.txt
+
+          # Xử lý:
+          # - Xoá dòng trắng
+          # - Thay dấu phẩy cuối dòng bằng @
+          # - Loại dòng trùng
+          grep -v '^$' temp_utf8.txt | sed 's/,$/@/' | sort | uniq > combined.txt
+
+          # Xoá tạm
+          rm temp_raw.txt temp_utf8.txt
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if ! git diff --quiet combined.txt; then
+            git add combined.txt
+            git commit -m "Update combined.txt at $(date -u)"
+            git push
+          else
+            echo "No changes to commit."
+          fi
