@@ -15,10 +15,10 @@ jobs:
 
       - name: Fetch and process with encoding fix
         run: |
-          # Tạo file tạm
+          # Tạo file tạm rỗng
           > temp_raw.txt
 
-          # Lấy dữ liệu từ các URL
+          # Lấy dữ liệu từ 6 URL
           curl -s http://dangky.hexat.com/lau.txt >> temp_raw.txt
           curl -s http://112.213.94.5/srvips/sv.txt >> temp_raw.txt
           curl -s http://tuananh0781.hexat.com/19951999dshgkjd.txt >> temp_raw.txt
@@ -26,27 +26,20 @@ jobs:
           curl -s http://rkbom.site/ip/svmoi.txt >> temp_raw.txt
           curl -s http://sv.naska.com.vn/allsv.txt >> temp_raw.txt
 
-          # Chuyển mã hóa từ Windows-1258 → UTF-8 (nếu sai encoding)
+          # Chuyển mã hóa về UTF-8 nếu cần
           iconv -f WINDOWS-1258 -t UTF-8 temp_raw.txt -o temp_utf8.txt || cp temp_raw.txt temp_utf8.txt
 
-          # Xử lý:
-          # - Xoá dòng trắng
-          # - Thay dấu phẩy cuối dòng bằng @
-          # - Loại dòng trùng
+          # Làm sạch: bỏ dòng trắng, đổi dấu phẩy cuối dòng thành @, lọc trùng
           grep -v '^$' temp_utf8.txt | sed 's/,$/@/' | sort | uniq > combined.txt
 
-          # Xoá tạm
+          # Xoá file tạm
           rm temp_raw.txt temp_utf8.txt
 
-      - name: Commit and push if changed
+      - name: Commit and push combined.txt
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          if ! git diff --quiet combined.txt; then
-            git add combined.txt
-            git commit -m "Update combined.txt at $(date -u)"
-            git push
-          else
-            echo "No changes to commit."
-          fi
+          git add combined.txt
+          git commit -m "Update combined.txt at $(date -u)" || echo "Nothing to commit"
+          git push
