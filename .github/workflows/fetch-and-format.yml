@@ -10,8 +10,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
+- name: Checkout repo
+  uses: actions/checkout@v3
+  with:
+    ref: main  # đảm bảo đang làm việc trên nhánh main
+
 
       - name: Fetch and process with encoding fix
         run: |
