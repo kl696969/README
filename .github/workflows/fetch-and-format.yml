@@ -30,7 +30,7 @@ jobs:
           iconv -f WINDOWS-1258 -t UTF-8 temp_raw.txt -o temp_utf8.txt || cp temp_raw.txt temp_utf8.txt
 
           # Làm sạch: bỏ dòng trắng, đổi dấu phẩy cuối dòng thành @, lọc trùng
-          grep -v '^$' temp_utf8.txt | sed 's/,$/@/' | sort | uniq > combined.txt
+          grep -v '^$' temp_utf8.txt | sed 's/,$/@/' | sort | uniq > fullsvgop.txt
 
           # Xoá file tạm
           rm temp_raw.txt temp_utf8.txt
