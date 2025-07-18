@@ -41,7 +41,7 @@ jobs:
             # Đảm bảo dòng cuối có dấu ,
             sed -i '$s/[^,]$/.&,/; $s/,$//; $s/$/,/' clean.txt
 
-            # Tách theo dấu phẩy + chuẩn hóa + bỏ dòng chứa admin/local
+            # Tách theo dấu phẩy + chuẩn hóa + bỏ dòng chứa admin/local/test
             tr ',\r' '\n' < clean.txt | grep -v '^$' | sed 's/ *@*$/@/' | grep -viE 'test|ngày|admin|local|---' > "$tmpfile"
 
             rm -f raw.txt clean.txt
@@ -49,24 +49,23 @@ jobs:
 
           # Danh sách URL theo thứ tự mong muốn
           fetch_and_clean http://siki.atwebpages.com/tk/sv1.txt                 truyenky
-          fetch_and_clean http://rkbom.site/ip/svmoi.txt                       svmoi
-          fetch_and_clean http://rkbom.site/ip/hckpah                          hoiuc
-          fetch_and_clean https://kpahace.top/NQSH2.txt                        kpahace
-          fetch_and_clean http://14.225.207.172/srv.txt                        kpahvn
-          fetch_and_clean http://piavn.wap.sh/sv.txt                           kpahvip
-          fetch_and_clean http://vananmom.myartsonline.com/sever.txt          kpahbaby
-          fetch_and_clean http://babysever.wap.sh/KPAHgo/Sever                kpahgo
-          
+          fetch_and_clean http://rkbom.site/ip/svmoi.txt                        svmoi
+          fetch_and_clean http://rkbom.site/ip/hckpah                           hoiuc
+          fetch_and_clean https://kpahace.top/NQSH2.txt                         kpahace
+          fetch_and_clean http://14.225.207.172/srv.txt                         kpahvn
+          fetch_and_clean http://piavn.wap.sh/sv.txt                            kpahvip
+          fetch_and_clean http://vananmom.myartsonline.com/sever.txt           kpahbaby
+          fetch_and_clean http://babysever.wap.sh/KPAHgo/Sever                  kpahgo
+
           # Gộp đúng thứ tự
           for f in urls/*.txt; do
             cat "$f" >> combined.txt
           done
 
-          # Lọc trùng theo IP:PORT (phải giống cả IP và PORT)
-          awk -F: '!seen[$2 ":" $3]++' combined.txt > step_filtered.txt
+          # Lọc trùng theo IP:PORT
+          awk -F: '!a[$2":"$3]++' combined.txt > step_filtered.txt
 
-
-          # Chỉ giữ dòng hợp lệ: dạng tên:ip:port:số@
+          # Chỉ giữ dòng hợp lệ
           grep -E '^[^:]+:[^:]+:[0-9]+:[0-9]+@$' step_filtered.txt > new_ALLSV
 
           # Xóa @ dòng cuối nếu có
