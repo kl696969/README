@@ -55,6 +55,7 @@ jobs:
           fetch_and_clean http://14.225.207.172/srv.txt         kpahvn
           fetch_and_clean http://piavn.wap.sh/sv.txt         kpahvip
           fetch_and_clean http://vananmom.myartsonline.com/sever.txt         kpahbaby
+          fetch_and_clean http://babysever.wap.sh/KPAHgo/Sever         kpahgo
           
 
           # Gộp đúng thứ tự
