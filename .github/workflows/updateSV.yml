@@ -51,7 +51,11 @@ jobs:
           fetch_and_clean http://siki.atwebpages.com/tk/sv1.txt                 truyenky
           fetch_and_clean http://rkbom.site/ip/svmoi.txt         svmoi
           fetch_and_clean http://rkbom.site/ip/hckpah            hoiuc
-                    fetch_and_clean http://rkbom.site/ip/svmoi.txt         hoisinh
+          fetch_and_clean https://kpahace.top/NQSH2.txt         kpahace
+          fetch_and_clean http://14.225.207.172/srv.txt         kpahvn
+          fetch_and_clean http://piavn.wap.sh/sv.txt         kpahvip
+          fetch_and_clean http://vananmom.myartsonline.com/sever.txt         kpahbaby
+          
 
           # Gộp đúng thứ tự
           for f in urls/*.txt; do
