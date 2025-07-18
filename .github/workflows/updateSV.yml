@@ -1,4 +1,4 @@
-name: Fetch and clean server list with UTF-8 fix
+name: Fetch and clean server list (no IP filter)
 
 on:
   schedule:
@@ -56,16 +56,13 @@ jobs:
             cat "$f" >> combined.txt
           done
 
-          # Lọc trùng theo IP:PORT
-          awk -F: '!seen[$2":"$3]++' combined.txt > step_filtered.txt
+          # Bỏ lọc IP/PORT — giữ nguyên tất cả
+          grep -E '^[^:]+:[^:]+:[0-9]+:[0-9]+@$' combined.txt > new_ALLSV
 
-          # Chỉ giữ dòng hợp lệ
-          grep -E '^[^:]+:[^:]+:[0-9]+:[0-9]+@$' step_filtered.txt > new_ALLSV
-
-          # Xóa @ cuối nếu có
+          # Xóa ký tự @ cuối cùng ở dòng cuối nếu có
           sed -i '${s/@$//}' new_ALLSV
 
-          rm -rf urls combined.txt step_filtered.txt
+          rm -rf urls combined.txt
 
       - name: Compare with old file
         id: diffcheck
