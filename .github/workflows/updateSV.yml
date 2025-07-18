@@ -1,0 +1,99 @@
+name: Fetch and clean server list with UTF-8 fix
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # chạy mỗi giờ
+  workflow_dispatch:
+
+jobs:
+  fetch_clean_save:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          ref: main
+
+      - name: Save old ALLSV if exists
+        run: |
+          if [ -f ALLSV ]; then
+            cp ALLSV old_ALLSV
+          else
+            touch old_ALLSV
+          fi
+
+      - name: Fetch and clean data by URL order
+        run: |
+          mkdir -p urls && > combined.txt
+
+          fetch_and_clean() {
+            local url=$1
+            local name=$2
+            local tmpfile="urls/$name.txt"
+
+            echo "Fetching $url..."
+            curl -s "$url" > raw.txt
+
+            # Xóa BOM nếu có
+            sed '1s/^\xEF\xBB\xBF//' raw.txt > clean.txt
+
+            # Đảm bảo dòng cuối có dấu ,
+            sed -i '$s/[^,]$/.&,/; $s/,$//; $s/$/,/' clean.txt
+
+            # Tách theo dấu phẩy + chuẩn hóa + bỏ dòng chứa admin/local
+            tr ',\r' '\n' < clean.txt | grep -v '^$' | sed 's/ *@*$/@/' | grep -viE 'admin|local|---' > "$tmpfile"
+
+            rm -f raw.txt clean.txt
+          }
+
+          fetch_and_clean http://rkbom.site/ip/svmoi.txt         svmoi
+          fetch_and_clean http://kpah99.com/nqsh9.txt            nqsh9
+          fetch_and_clean http://siki.atwebpages.com/tk/sv1.txt  truyenky
+
+          for f in urls/*.txt; do
+            cat "$f" >> combined.txt
+          done
+
+          awk -F: '!a[$2":"$3]++' combined.txt > step_filtered.txt
+          grep -E '^[^:]+:[^:]+:[0-9]+:[0-9]+@$' step_filtered.txt > new_lines.txt
+          sed -i '${s/@$//}' new_lines.txt
+
+          rm -rf urls combined.txt step_filtered.txt
+
+      - name: Append only new lines to ALLSV
+        run: |
+          touch ALLSV
+          grep -vxFf ALLSV new_lines.txt >> ALLSV
+          comm -13 <(sort old_ALLSV) <(sort ALLSV) > just_added.txt
+
+      - name: Commit and push ALLSV if changed
+        if: success()
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -s just_added.txt ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add ALLSV
+            git commit -m "Append new servers to ALLSV at $(date -u)"
+            git remote set-url origin https://x-access-token:${TOKEN}@github.com/${{ github.repository }}
+            git push origin HEAD:main
+          fi
+
+      - name: Notify Telegram with new lines
+        if: success()
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ -s just_added.txt ]; then
+            TIME_NOW=$(date -u '+%H:%M %d-%m-%Y')
+            NEW_LINES=$(head -n 20 just_added.txt)
+            MESSAGE=$(printf "📥 Đã cập nhật SV vào *ALLSV* lúc *%s UTC*\n\n🆕 *SV mới:*\n\`\`\`\n%s\n\`\`\`" "$TIME_NOW" "$NEW_LINES")
+
+            curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
+              -d chat_id="${TELEGRAM_CHAT_ID}" \
+              -d text="$MESSAGE" \
+              -d parse_mode="Markdown"
+          fi
