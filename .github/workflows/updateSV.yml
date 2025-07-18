@@ -42,7 +42,7 @@ jobs:
             sed -i '$s/[^,]$/.&,/; $s/,$//; $s/$/,/' clean.txt
 
             # Tách theo dấu phẩy + chuẩn hóa + bỏ dòng chứa admin/local
-            tr ',\r' '\n' < clean.txt | grep -v '^$' | sed 's/ *@*$/@/' | grep -viE 'admin|local|---' > "$tmpfile"
+            tr ',\r' '\n' < clean.txt | grep -v '^$' | sed 's/ *@*$/@/' | grep -viE 'test|ngày|admin|local|---' > "$tmpfile"
 
             rm -f raw.txt clean.txt
           }
