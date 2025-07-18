@@ -1,4 +1,4 @@
-name: Fetch and clean server list (no IP filter)
+name: Fetch and clean server list with UTF-8 fix
 
 on:
   schedule:
@@ -23,7 +23,7 @@ jobs:
             touch old_ALLSV
           fi
 
-      - name: Fetch and clean data
+      - name: Fetch and clean data by URL order
         run: |
           mkdir -p urls && > combined.txt
 
@@ -35,36 +35,45 @@ jobs:
             echo "Fetching $url..."
             curl -s "$url" > raw.txt
 
+            # Xóa BOM nếu có
             sed '1s/^\xEF\xBB\xBF//' raw.txt > clean.txt
+
+            # Đảm bảo dòng cuối có dấu ,
             sed -i '$s/[^,]$/.&,/; $s/,$//; $s/$/,/' clean.txt
 
-            tr ',\r' '\n' < clean.txt | grep -v '^$' | sed 's/ *@*$/@/' | grep -viE 'test|ngày|admin|local|---' > "$tmpfile"
+            # Tách theo dấu phẩy + chuẩn hóa + bỏ dòng chứa admin/local/test
+            tr ',\r' '\n' < clean.txt | grep -v '^$' | sed 's/ *@*$/@/' | grep -viE 'test|Đua|admin|local|---' > "$tmpfile"
 
             rm -f raw.txt clean.txt
           }
 
-          fetch_and_clean http://siki.atwebpages.com/tk/sv1.txt truyenky
-          fetch_and_clean http://rkbom.site/ip/svmoi.txt svmoi
-          fetch_and_clean http://rkbom.site/ip/hckpah hoiuc
-          fetch_and_clean https://kpahace.top/NQSH2.txt kpahace
-          fetch_and_clean http://14.225.207.172/srv.txt kpahvn
-          fetch_and_clean http://piavn.wap.sh/sv.txt kpahvip
-          fetch_and_clean http://vananmom.myartsonline.com/sever.txt kpahbaby
-          fetch_and_clean http://babysever.wap.sh/KPAHgo/Sever kpahgo
+          # Danh sách URL theo thứ tự mong muốn
+          fetch_and_clean http://siki.atwebpages.com/tk/sv1.txt                 truyenky
+          fetch_and_clean http://rkbom.site/ip/svmoi.txt                        svmoi
+          fetch_and_clean http://rkbom.site/ip/hckpah                           hoiuc
+          fetch_and_clean https://kpahace.top/NQSH2.txt                         kpahace
+          fetch_and_clean http://14.225.207.172/srv.txt                         kpahvn
+          fetch_and_clean http://piavn.wap.sh/sv.txt                            kpahvip
+          fetch_and_clean http://vananmom.myartsonline.com/sever.txt           kpahbaby
+          fetch_and_clean http://babysever.wap.sh/KPAHgo/Sever                  kpahgo
 
+          # Gộp đúng thứ tự
           for f in urls/*.txt; do
             cat "$f" >> combined.txt
           done
 
-          # Bỏ lọc IP/PORT — giữ nguyên tất cả
-          grep -E '^[^:]+:[^:]+:[0-9]+:[0-9]+@$' combined.txt > new_ALLSV
+          # Lọc trùng theo IP:PORT
+          awk -F: '!a[$2":"$3]++' combined.txt > step_filtered.txt
 
-          # Xóa ký tự @ cuối cùng ở dòng cuối nếu có
+          # Chỉ giữ dòng hợp lệ
+          grep -E '^[^:]+:[^:]+:[0-9]+:[0-9]+@$' step_filtered.txt > new_ALLSV
+
+          # Xóa @ dòng cuối nếu có
           sed -i '${s/@$//}' new_ALLSV
 
-          rm -rf urls combined.txt
+          rm -rf urls combined.txt step_filtered.txt
 
-      - name: Compare with old file
+      - name: Compare with old file and decide if changed
         id: diffcheck
         run: |
           if ! cmp -s new_ALLSV old_ALLSV; then
@@ -73,23 +82,24 @@ jobs:
             echo "CHANGED=false" >> $GITHUB_ENV
           fi
 
-      - name: Replace ALLSV
+      - name: Replace ALLSV if changed
         if: env.CHANGED == 'true'
         run: mv new_ALLSV ALLSV
 
-      - name: Commit and push
+      - name: Commit and push ALLSV
         if: env.CHANGED == 'true'
         env:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
           git add ALLSV
           git commit -m "Update ALLSV at $(date -u)"
           git remote set-url origin https://x-access-token:${TOKEN}@github.com/${{ github.repository }}
           git push origin HEAD:main
 
-      - name: Notify Telegram
+      - name: Notify Telegram if changed
         if: env.CHANGED == 'true'
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
