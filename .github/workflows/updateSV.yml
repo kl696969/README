@@ -62,8 +62,9 @@ jobs:
             cat "$f" >> combined.txt
           done
 
-          # Lọc trùng theo IP:PORT
-          awk -F: '!a[$2":"$3]++' combined.txt > step_filtered.txt
+          # Lọc trùng theo IP:PORT (phải giống cả IP và PORT)
+          awk -F: '!a[$2 ":" $3]++' combined.txt > step_filtered.txt
+
 
           # Chỉ giữ dòng hợp lệ: dạng tên:ip:port:số@
           grep -E '^[^:]+:[^:]+:[0-9]+:[0-9]+@$' step_filtered.txt > new_ALLSV
