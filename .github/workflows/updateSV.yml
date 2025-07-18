@@ -63,7 +63,7 @@ jobs:
           done
 
           # Lọc trùng theo IP:PORT (phải giống cả IP và PORT)
-          awk -F: '!a[$2 ":" $3]++' combined.txt > step_filtered.txt
+          awk -F: '!seen[$2 ":" $3]++' combined.txt > step_filtered.txt
 
 
           # Chỉ giữ dòng hợp lệ: dạng tên:ip:port:số@
